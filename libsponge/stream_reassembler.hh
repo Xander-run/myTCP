@@ -11,13 +11,12 @@
 class StreamReassembler {
   private:
     // Your code here -- add private members as necessary.
-
     ByteStream _output;          //!< The reassembled in-order byte stream
     size_t _capacity;            //!< The maximum number of bytes
-    size_t _minNeededIndex;      // 最小的缺省的char的index
-    size_t _maxUnsavedIndex;     // 最大的被temp存储的char的index
-    size_t _maxEndIndex;         // 允许的最大的index(可以取到)
-    bool _canMaxEndIndexChange;
+    size_t _minNeededIndex = 0;      // 最小的缺省的char的index
+    size_t _maxUnsavedIndex = -1;     // 最大的被temp存储的char的index
+    size_t _maxEndIndex = -1;         // 允许的最大的index(可以取到)
+    bool _canMaxEndIndexChange = true;
     bool *_saved;                //!< bitmap of taken indexes
     char *_chars;                //!<  the value in the
     // TODO: how to handle eof in push_substring?

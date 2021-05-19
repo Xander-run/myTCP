@@ -12,13 +12,9 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 
 using namespace std;
 
-StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity), _capacity(capacity) {
-    _minNeededIndex = 0;
-    _maxUnsavedIndex = -1;
-    _maxEndIndex = -1;
-    _canMaxEndIndexChange = true;
-    _saved = new bool[capacity]();
-    _chars = new char[capacity];
+StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity), _capacity(capacity), _saved(new bool[capacity]), _chars(new char[capacity]) {
+//    this->_saved = new bool[capacity]();
+//    this->_chars = new char[capacity];
 }
 
 //! \details This function accepts a substring (aka a segment) of bytes,
