@@ -28,6 +28,10 @@ class StreamReassembler {
     // TODO: both has been assemble and not yet been reassembled?
     StreamReassembler(const size_t capacity);
 
+    StreamReassembler(const StreamReassembler& other);
+
+    StreamReassembler& operator=(const StreamReassembler& other);
+
     //! \brief Receive a substring and write any newly contiguous bytes into the stream.
     //!
     //! The StreamReassembler will stay within the memory limits of the `capacity`.

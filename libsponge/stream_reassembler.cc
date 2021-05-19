@@ -17,6 +17,22 @@ StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity),
 //    this->_chars = new char[capacity];
 }
 
+StreamReassembler::StreamReassembler(const StreamReassembler& other) : _output(other._capacity), _capacity(other._capacity), _saved(new bool[other._capacity]), _chars(new char[other._capacity]) {
+
+}
+
+StreamReassembler& StreamReassembler::operator=(const StreamReassembler& other) {
+    this->_capacity = other._capacity;
+    this->_maxUnsavedIndex = other._maxUnsavedIndex;
+    this->_chars = other._chars; // FIXME
+    this->_saved = other._saved; // FIXME
+    this->_minNeededIndex = other._minNeededIndex;
+    this->_output = other._output;
+    this->_canMaxEndIndexChange = other._canMaxEndIndexChange;
+    this->_maxEndIndex = other._maxEndIndex;
+    return *this;
+}
+
 //! \details This function accepts a substring (aka a segment) of bytes,
 //! possibly out-of-order, from the logical stream, and assembles any newly
 //! contiguous substrings and writes them into the output stream in order.
