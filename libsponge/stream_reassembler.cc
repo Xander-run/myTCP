@@ -42,7 +42,7 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         return;
     }
 
-    if (_maxUnsavedIndex < int(index + length - 1)) {
+    if ((_maxUnsavedIndex < int(index + length - 1)) &&_canMaxEndIndexChange) {
         _maxUnsavedIndex = index + length - 1;
     }
 
@@ -60,7 +60,11 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     int newMinNeededIndex = int(_minNeededIndex);
     string toWrite = "";
 
+    // todo: lost x in here
     for (; newMinNeededIndex <= _maxUnsavedIndex; newMinNeededIndex++) {
+        if (toWrite.length() == _output.remaining_capacity()) {
+            break;
+        }
         if (_saved[newMinNeededIndex % _capacity]) {
             _saved[newMinNeededIndex % _capacity] = false;
             toWrite += _chars[newMinNeededIndex % _capacity];
@@ -70,7 +74,14 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     }
 
     if (newMinNeededIndex > _maxUnsavedIndex) {
-        _maxUnsavedIndex = -1;
+        if (!_canMaxEndIndexChange) {
+            // TODO:
+            if (!_saved[newMinNeededIndex % _capacity]) {
+                _output.end_input();
+            }
+        } else {
+            _maxUnsavedIndex = -1;
+        }
     }
 
     _minNeededIndex = newMinNeededIndex;
@@ -90,18 +101,18 @@ bool StreamReassembler::empty() const {
 }
 
 bool StreamReassembler::exceedCapacity(const size_t index, const size_t length) {
-    size_t neededCapacity;
+    int neededCapacity;
     size_t remainingCapacity = _capacity - (_output.buffer_size() - _output.remaining_capacity());
     if (_maxUnsavedIndex > 0) {
         remainingCapacity -= _maxUnsavedIndex - _minNeededIndex + 1;
-        neededCapacity = index + length - _maxUnsavedIndex - 1;
+        neededCapacity = int(index + length - _maxUnsavedIndex - 1);
     } else {
-        neededCapacity = index + length - _minNeededIndex - 1;
+        neededCapacity = int(index + length - _minNeededIndex - 1);
     }
 
-    return neededCapacity > remainingCapacity;
+    return neededCapacity > int(remainingCapacity);
 }
 
 bool StreamReassembler::exceedEOF(const size_t index, const size_t length) {
-    return int(index + length - 1) > _maxEndIndex && !_canMaxEndIndexChange;
+    return (int(index + length - 1) > _maxEndIndex) && (!_canMaxEndIndexChange);
 }

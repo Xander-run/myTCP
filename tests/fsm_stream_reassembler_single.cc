@@ -30,7 +30,6 @@ int main() {
 
         {
             ReassemblerTestHarness test{65000};
-
             test.execute(SubmitSegment{"a", 0}.with_eof(true));
 
             test.execute(BytesAssembled(1));
@@ -87,7 +86,7 @@ int main() {
             test.execute(BytesAvailable{"abcdefgh"});
             test.execute(AtEof{});
         }
-
+//        cout << "90" <<endl;
         {
             ReassemblerTestHarness test{8};
 
@@ -100,7 +99,7 @@ int main() {
             test.execute(BytesAvailable{"abcdefgh"});
             test.execute(AtEof{});
         }
-
+//        cout << "103" <<endl;
         {
             ReassemblerTestHarness test{8};
 
@@ -115,7 +114,7 @@ int main() {
             test.execute(SubmitSegment{"cdefg", 2});
             test.execute(BytesAssembled(8));
             test.execute(BytesAvailable{"abcdefgh"});
-            test.execute(NotAtEof{});
+            test.execute(NotAtEof{});  // todo: NOT EOF?
         }
     } catch (const exception &e) {
         cerr << "Exception: " << e.what() << endl;
