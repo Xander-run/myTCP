@@ -38,6 +38,8 @@ StreamReassembler& StreamReassembler::operator=(const StreamReassembler& other) 
 //! contiguous substrings and writes them into the output stream in order.
 void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
     size_t length = data.length();
+
+    // todo: 超出部分做截断而不是直接返回
     if (exceedCapacity(index, length) || exceedEOF(index, length)) {
         return;
     }
@@ -51,7 +53,7 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         _canMaxEndIndexChange = false;
 //        _output.end_input();
     }
-
+    // todo: 只有capacity内的才能被推入
     for (size_t i = index; i < index + length; i++) {
         _saved[i % _capacity] = true;
         _chars[i % _capacity] = data[i - index];
@@ -60,8 +62,7 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     int newMinNeededIndex = int(_minNeededIndex);
     string toWrite = "";
 
-    // todo: lost x in here
-    for (; newMinNeededIndex <= _maxUnsavedIndex; newMinNeededIndex++) {
+   for (; newMinNeededIndex <= _maxUnsavedIndex; newMinNeededIndex++) {
         if (toWrite.length() == _output.remaining_capacity()) {
             break;
         }
@@ -75,7 +76,6 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 
     if (newMinNeededIndex > _maxUnsavedIndex) {
         if (!_canMaxEndIndexChange) {
-            // TODO:
             if (!_saved[newMinNeededIndex % _capacity]) {
                 _output.end_input();
             }
@@ -102,12 +102,13 @@ bool StreamReassembler::empty() const {
 
 bool StreamReassembler::exceedCapacity(const size_t index, const size_t length) {
     int neededCapacity;
-    size_t remainingCapacity = _capacity - (_output.buffer_size() - _output.remaining_capacity());
+    size_t remainingCapacity = _output.remaining_capacity();  // todo
     if (_maxUnsavedIndex > 0) {
+        // assembler中占用了一部分内存
         remainingCapacity -= _maxUnsavedIndex - _minNeededIndex + 1;
         neededCapacity = int(index + length - _maxUnsavedIndex - 1);
     } else {
-        neededCapacity = int(index + length - _minNeededIndex - 1);
+        neededCapacity = int(index + length - _minNeededIndex);
     }
 
     return neededCapacity > int(remainingCapacity);
