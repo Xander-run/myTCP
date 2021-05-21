@@ -22,6 +22,7 @@ int main() {
             test.execute(BytesAssembled(8));
             test.execute(BytesAvailable("efgh"));
             test.execute(NotAtEof{});
+//            cout << "HERE0\n";
         }
 
         {
@@ -35,6 +36,7 @@ int main() {
 
             test.execute(BytesAvailable("abcdefgh"));
             test.execute(NotAtEof{});
+//            cout << "HERE1\n";
         }
 
         {
@@ -52,19 +54,22 @@ int main() {
             test.execute(BytesAvailable(ss.str()));
             test.execute(NotAtEof{});
         }
+//        cout<<"HERE2\n";
 
         {
             ReassemblerTestHarness test{65000};
             std::ostringstream ss;
 
             for (size_t i = 0; i < 100; ++i) {
+//                cout << "i == " << i << endl;
                 test.execute(BytesAssembled(4 * i));
                 test.execute(SubmitSegment{"abcd", 4 * i});
                 test.execute(NotAtEof{});
-
                 test.execute(BytesAvailable("abcd"));
+//                cout << "i == " << i << endl;
             }
         }
+//        cout << "HERE3\n";
 
     } catch (const exception &e) {
         cerr << "Exception: " << e.what() << endl;

@@ -14,8 +14,9 @@ class StreamReassembler {
     ByteStream _output;          //!< The reassembled in-order byte stream
     size_t _capacity;            //!< The maximum number of bytes
     size_t _minNeededIndex = 0;      // 最小的缺省的char的index
-    size_t _maxUnsavedIndex = -1;     // 最大的被temp存储的char的index
-    size_t _maxEndIndex = -1;         // 允许的最大的index(可以取到)
+    int _maxUnsavedIndex = -1;     // 最大的被temp存储的char的index
+    int _maxEndIndex = -1;         // 允许的最大的index(可以取到)
+    // FIXME: int size_t类型强制转换有不安全的可能性
     bool _canMaxEndIndexChange = true;
     bool *_saved;                //!< bitmap of taken indexes
     char *_chars;                //!<  the value in the

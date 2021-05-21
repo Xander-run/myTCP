@@ -42,7 +42,7 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         return;
     }
 
-    if (_maxUnsavedIndex < index + length - 1) {
+    if (_maxUnsavedIndex < int(index + length - 1)) {
         _maxUnsavedIndex = index + length - 1;
     }
 
@@ -54,13 +54,13 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 
     for (size_t i = index; i < index + length; i++) {
         _saved[i % _capacity] = true;
-        _chars[i % _capacity] = data[i];
+        _chars[i % _capacity] = data[i - index];
     }
 
-    size_t newMinNeededIndex = _minNeededIndex;
-    string toWrite;
+    int newMinNeededIndex = int(_minNeededIndex);
+    string toWrite = "";
 
-    for (; newMinNeededIndex < _maxUnsavedIndex; newMinNeededIndex++) {
+    for (; newMinNeededIndex <= _maxUnsavedIndex; newMinNeededIndex++) {
         if (_saved[newMinNeededIndex % _capacity]) {
             _saved[newMinNeededIndex % _capacity] = false;
             toWrite += _chars[newMinNeededIndex % _capacity];
@@ -79,14 +79,14 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 
 size_t StreamReassembler::unassembled_bytes() const {
     size_t total = 0;
-    for (size_t i = _minNeededIndex + 1; i <= _maxUnsavedIndex; i++) {
+    for (int i = int(_minNeededIndex); i <= _maxUnsavedIndex; i++) {
         total += _saved[i % _capacity];
     }
     return total;
 }
 
 bool StreamReassembler::empty() const {
-    return _minNeededIndex > _maxEndIndex;
+    return int(_minNeededIndex) > _maxEndIndex;
 }
 
 bool StreamReassembler::exceedCapacity(const size_t index, const size_t length) {
@@ -103,5 +103,5 @@ bool StreamReassembler::exceedCapacity(const size_t index, const size_t length) 
 }
 
 bool StreamReassembler::exceedEOF(const size_t index, const size_t length) {
-    return index + length - 1 > _maxEndIndex && !_canMaxEndIndexChange;
+    return int(index + length - 1) > _maxEndIndex && !_canMaxEndIndexChange;
 }
