@@ -21,7 +21,7 @@ class StreamReassembler {
     size_t _beginIndex = 0;         // assembler中存储了的部分开始的Index, 包含
     size_t _endIndex = 0;           // assembler中存储了的部分结束的结束的Index, 不包含
     size_t _eofIndex = 0;           // eof对应的Index, 0则表示还没设置, 不可以取到
-    size_t _maxStreamedIndex = 0;   // 已经输出给_output的最大的Index, 不包含
+    size_t _nextIndexToStream = 0;   // 下一个要输出给stream的index
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.

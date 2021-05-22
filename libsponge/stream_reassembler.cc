@@ -50,8 +50,8 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 
     // 更新标志左右区间的Index
     if (_beginIndex > index) {
-        if (index <= _maxStreamedIndex) {
-            _beginIndex = _maxStreamedIndex;
+        if (index <= _nextIndexToStream) {
+            _beginIndex = _nextIndexToStream;
         } else {
             _beginIndex = index;
         }
@@ -70,7 +70,7 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 
     // 获取能够写入_output的字符串
     string toWrite = "";
-    for (size_t i = _maxStreamedIndex; i < _endIndex; i++) {
+    for (size_t i = _nextIndexToStream; i < _endIndex; i++) {
         if (_saved[i % _capacity]) {
             _saved[i % _capacity] = false;
             toWrite += _chars[i % _capacity];
@@ -90,15 +90,15 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 
     // 将字符串写入，并更新_maxStreamed
     _output.write(toWrite);
-    _maxStreamedIndex += toWrite.length();
-    if (_eofIsSet && _maxStreamedIndex >= _eofIndex) {
+    _nextIndexToStream += toWrite.length();
+    if (_eofIsSet && _nextIndexToStream >= _eofIndex) {
         _output.end_input();
     }
 }
 
 size_t StreamReassembler::unassembled_bytes() const {
     size_t total = 0;
-    for (size_t i = _maxStreamedIndex; i < _endIndex; i++) {
+    for (size_t i = _nextIndexToStream; i < _endIndex; i++) {
         total += _saved[i % _capacity];
     }
     return total;
@@ -112,7 +112,7 @@ bool StreamReassembler::empty() const {
 // 返回超出容量的字符数量，没超出则返回 <= 0 的数
 int StreamReassembler::exceedCapacity(const size_t index, const size_t length) {
     int neededCapacity = index + length - _endIndex;
-    size_t remainingCapacity = _output.remaining_capacity() - (_endIndex - _maxStreamedIndex);
+    size_t remainingCapacity = _output.remaining_capacity() - (_endIndex - _nextIndexToStream);
     return neededCapacity - int(remainingCapacity);
 }
 
