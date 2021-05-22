@@ -14,9 +14,9 @@
 
 using namespace std;
 
-static constexpr unsigned NREPS = 32;
-static constexpr unsigned NSEGS = 128;
-static constexpr unsigned MAX_SEG_LEN = 2048;
+static constexpr unsigned NREPS = 3;
+static constexpr unsigned NSEGS = 2;
+static constexpr unsigned MAX_SEG_LEN = 8;
 
 string read(StreamReassembler &reassembler) {
     return reassembler.stream_out().read(reassembler.stream_out().buffer_size());
@@ -52,6 +52,10 @@ int main() {
                 throw runtime_error("test 1 - number of bytes RX is incorrect");
             }
             if (!equal(result.cbegin(), result.cend(), d.cbegin())) {
+//                cout << "ecpected:" <<endl;
+//                cout << d << endl;
+//                cout << "but get:" <<endl;
+//                cout << buf.stream_out().read(buf.stream_out().buffer_size()) << endl;
                 throw runtime_error("test 1 - content of RX bytes is incorrect");
             }
         }

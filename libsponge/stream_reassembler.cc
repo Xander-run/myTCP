@@ -41,7 +41,7 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 
     // todo: 超出部分做截断而不是直接返回
     // todo: eof情况下就算truncated也要更新maxIndex
-    string truncatedData = data.substr(0, length - max(exceedCapacity(index, length), exceedEOF(index, length)));
+    string truncatedData = data.substr(0, length - max(0, max(exceedCapacity(index, length), exceedEOF(index, length))));
     length = truncatedData.length();
 
     // todo: amxUnsaved和eof之后的上限
@@ -54,7 +54,7 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         _canMaxEndIndexChange = false;
 //        _output.end_input();
     }
-    // todo: 只有capacity内的才能被推入
+
     for (size_t i = index; i < index + length; i++) {
         _saved[i % _capacity] = true;
         _chars[i % _capacity] = truncatedData[i - index];
@@ -64,9 +64,9 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     string toWrite = "";
 
    for (; newMinNeededIndex <= _maxUnsavedIndex; newMinNeededIndex++) {
-        if (toWrite.length() >= _output.remaining_capacity()) {
-            break;
-        }
+//        if (toWrite.length() >= _output.remaining_capacity()) {
+//            break;
+//        }
         if (_saved[newMinNeededIndex % _capacity]) {
             _saved[newMinNeededIndex % _capacity] = false;
             toWrite += _chars[newMinNeededIndex % _capacity];
