@@ -13,20 +13,19 @@ class StreamReassembler {
     // Your code here -- add private members as necessary.
     ByteStream _output;          //!< The reassembled in-order byte stream
     size_t _capacity;            //!< The maximum number of bytes
-    size_t _minNeededIndex = 0;      // 最小的缺省的char的index
-    int _maxUnsavedIndex = -1;     // 最大的被temp存储的char的index
-    int _maxEndIndex = -1;         // 允许的最大的index(可以取到)
-    // FIXME: int size_t类型强制转换有不安全的可能性
     bool _canMaxEndIndexChange = true;
     bool *_saved;                //!< bitmap of taken indexes
     char *_chars;                //!<  the value in the
-    // TODO: how to handle eof in push_substring?
+    // TODO: refactor
+    size_t _beginIndex = 0;         // assembler中存储了的部分开始的Index，包含
+    size_t _endIndex = 0;           // assembler中存储了的部分结束的结束的Index，不包含
+    int _eofIndex = -1;             // eof对应的Index， -1则表示还没设置, 可以取到
+    size_t _maxStreamedIndex = 0;  // 已经输出给_output的最大的Index，不包含
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
     //! \note This capacity limits both the bytes that have been reassembled,
     //! and those that have not yet been reassembled.
-    // TODO: both has been assemble and not yet been reassembled?
     StreamReassembler(const size_t capacity);
 
     StreamReassembler(const StreamReassembler& other);

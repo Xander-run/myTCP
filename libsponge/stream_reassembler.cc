@@ -23,13 +23,10 @@ StreamReassembler::StreamReassembler(const StreamReassembler& other) : _output(o
 
 StreamReassembler& StreamReassembler::operator=(const StreamReassembler& other) {
     this->_capacity = other._capacity;
-    this->_maxUnsavedIndex = other._maxUnsavedIndex;
     this->_chars = other._chars; // FIXME
     this->_saved = other._saved; // FIXME
-    this->_minNeededIndex = other._minNeededIndex;
     this->_output = other._output;
     this->_canMaxEndIndexChange = other._canMaxEndIndexChange;
-    this->_maxEndIndex = other._maxEndIndex;
     return *this;
 }
 
@@ -39,82 +36,81 @@ StreamReassembler& StreamReassembler::operator=(const StreamReassembler& other) 
 void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
     size_t length = data.length();
 
-    // todo: 超出部分做截断而不是直接返回
-    // todo: eof情况下就算truncated也要更新maxIndex
+    // 根据eof和capacity将data进行截断
     string truncatedData = data.substr(0, length - max(0, max(exceedCapacity(index, length), exceedEOF(index, length))));
     length = truncatedData.length();
 
-    // todo: amxUnsaved和eof之后的上限
-    if (_maxUnsavedIndex < int(index + length - 1)) {
-        _maxUnsavedIndex = index + length - 1;
+    // 设置eof部分，这里采取可以多次设置eof的方式
+    if (eof) {
+        _eofIndex = index + data.length() - 1;
     }
 
-    if (eof && _canMaxEndIndexChange) {
-        _maxEndIndex = index + data.length() - 1;
-        _canMaxEndIndexChange = false;
-//        _output.end_input();
+    // 更新标志左右区间的Index
+    if (_beginIndex > index) {
+        if (index < _maxStreamedIndex) {
+            _beginIndex = _maxStreamedIndex;
+        } else {
+            _beginIndex = index;
+        }
     }
+    _endIndex = _endIndex > index + length ? _endIndex : index + length;
 
-    for (size_t i = index; i < index + length; i++) {
+    // 将data的数据读入缓存数组，并更新数组状态, 为避免更新已经输出的Index位置的数据, 此处用_beginIndex作为开始值
+    for (size_t i = _beginIndex; i < index + length; i++) {
         _saved[i % _capacity] = true;
         _chars[i % _capacity] = truncatedData[i - index];
     }
 
-    int newMinNeededIndex = int(_minNeededIndex);
+    // 获取能够写入_output的字符串
     string toWrite = "";
-
-   for (; newMinNeededIndex <= _maxUnsavedIndex; newMinNeededIndex++) {
-//        if (toWrite.length() >= _output.remaining_capacity()) {
-//            break;
-//        }
-        if (_saved[newMinNeededIndex % _capacity]) {
-            _saved[newMinNeededIndex % _capacity] = false;
-            toWrite += _chars[newMinNeededIndex % _capacity];
+    for (size_t i = _maxStreamedIndex; i < _endIndex; i++) {
+        if (_saved[i % _capacity]) {
+            _saved[i % _capacity] = false;
+            toWrite += _chars[i % _capacity];
         } else {
             break;
         }
     }
 
-    if (newMinNeededIndex > _maxUnsavedIndex) {
-        if (!_canMaxEndIndexChange && newMinNeededIndex > _maxEndIndex) {  // todo
-            if (!_saved[newMinNeededIndex % _capacity]) {
-                _output.end_input();
-            }
+    // 更新_beginIndex
+    while (_beginIndex < _endIndex) {
+        if (!_saved[_beginIndex % _capacity]) {
+            _beginIndex++;
         } else {
-            _maxUnsavedIndex = -1;
+            break;
         }
     }
 
-    _minNeededIndex = newMinNeededIndex;
+    // 将字符串写入，并更新_maxStreamed
     _output.write(toWrite);
+    _maxStreamedIndex += toWrite.length();
 }
 
 size_t StreamReassembler::unassembled_bytes() const {
     size_t total = 0;
-    for (int i = int(_minNeededIndex); i <= _maxUnsavedIndex; i++) {
-        total += _saved[i % _capacity];
+    for (size_t i = _maxStreamedIndex; i <_endIndex; i++) {
+        total += _saved[i %_capacity];
     }
     return total;
 }
 
 bool StreamReassembler::empty() const {
-    return int(_minNeededIndex) > _maxEndIndex;
+    // FIXME: not sure, should i consider eof?
+    return _beginIndex == _endIndex;
 }
 
+// 返回超出容量的字符数量，没超出则返回 <= 0 的数
 int StreamReassembler::exceedCapacity(const size_t index, const size_t length) {
-    int neededCapacity;
-    size_t remainingCapacity = _output.remaining_capacity();  // todo
-    if (_maxUnsavedIndex > 0) {
-        // assembler中占用了一部分内存
-        remainingCapacity -= _maxUnsavedIndex - _minNeededIndex + 1;
-        neededCapacity = int(index + length - _maxUnsavedIndex - 1);
-    } else {
-        neededCapacity = int(index + length - _minNeededIndex);
-    }
-
+    int neededCapacity = index + length - _endIndex;
+    size_t remainingCapacity = _output.remaining_capacity() - (_endIndex - _maxStreamedIndex);
     return neededCapacity - int(remainingCapacity);
 }
 
+// 返回超出EOF的字符数量，没超出则返回 <= 0 的数
 int StreamReassembler::exceedEOF(const size_t index, const size_t length) {
-    return (int(index + length - 1) - _maxEndIndex) * (!_canMaxEndIndexChange);
+    if (_eofIndex < 0) {
+        return -1;
+    } else {
+        return index + length - _eofIndex;
+    }
 }
