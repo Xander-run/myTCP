@@ -67,7 +67,8 @@ int main() {
             ReassemblerTestHarness test{3};
             for (unsigned int i = 0; i < 99997; i += 3) {
                 const string segment = {char(i), char(i + 1), char(i + 2), char(i + 13), char(i + 47), char(i + 9)};
-                test.execute(SubmitSegment{segment, i});
+                test.execute(SubmitSegment{segment, i});        cout << "HERE!" << endl;
+
                 test.execute(BytesAssembled(i + 3));
                 test.execute(BytesAvailable(segment.substr(0, 3)));
             }
