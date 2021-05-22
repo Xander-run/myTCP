@@ -40,13 +40,8 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     size_t length = data.length();
 
     // todo: 超出部分做截断而不是直接返回
-    if (exceedCapacity(index, length)) {
-
-    }
-
-    if (exceedEOF(index, length)) {
-
-    }
+    string truncatedData = data.substr(0, length - max(exceedCapacity(index, length), exceedEOF(index, length)));
+    length = truncatedData.length();
 
     if ((_maxUnsavedIndex < int(index + length - 1)) &&_canMaxEndIndexChange) {
         _maxUnsavedIndex = index + length - 1;
@@ -60,7 +55,7 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     // todo: 只有capacity内的才能被推入
     for (size_t i = index; i < index + length; i++) {
         _saved[i % _capacity] = true;
-        _chars[i % _capacity] = data[i - index];
+        _chars[i % _capacity] = truncatedData[i - index];
     }
 
     int newMinNeededIndex = int(_minNeededIndex);
@@ -104,7 +99,7 @@ bool StreamReassembler::empty() const {
     return int(_minNeededIndex) > _maxEndIndex;
 }
 
-bool StreamReassembler::exceedCapacity(const size_t index, const size_t length) {
+int StreamReassembler::exceedCapacity(const size_t index, const size_t length) {
     int neededCapacity;
     size_t remainingCapacity = _output.remaining_capacity();  // todo
     if (_maxUnsavedIndex > 0) {
@@ -115,9 +110,9 @@ bool StreamReassembler::exceedCapacity(const size_t index, const size_t length) 
         neededCapacity = int(index + length - _minNeededIndex);
     }
 
-    return neededCapacity > int(remainingCapacity);
+    return neededCapacity - int(remainingCapacity);
 }
 
-bool StreamReassembler::exceedEOF(const size_t index, const size_t length) {
-    return (int(index + length - 1) > _maxEndIndex) && (!_canMaxEndIndexChange);
+int StreamReassembler::exceedEOF(const size_t index, const size_t length) {
+    return (int(index + length - 1) - _maxEndIndex) * (!_canMaxEndIndexChange);
 }

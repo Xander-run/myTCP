@@ -59,9 +59,9 @@ class StreamReassembler {
     //! \returns `true` if no substrings are waiting to be assembled
     bool empty() const;
 
-    bool exceedCapacity(const size_t index, const size_t length);
+    int exceedCapacity(const size_t index, const size_t length); // return the exceed amount
 
-    bool exceedEOF(const size_t index, const size_t length);
+    int exceedEOF(const size_t index, const size_t length);     // return the exceed amount
 };
 
 #endif  // SPONGE_LIBSPONGE_STREAM_REASSEMBLER_HH

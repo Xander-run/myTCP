@@ -43,7 +43,7 @@ int main() {
 
             test.execute(BytesAvailable("cd"));
         }
-        cout << "HERE!" << endl;
+
         {
             ReassemblerTestHarness test{1};
 
