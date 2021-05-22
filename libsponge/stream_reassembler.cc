@@ -119,7 +119,7 @@ int StreamReassembler::exceedCapacity(const size_t index, const size_t length) {
 // 返回超出EOF的字符数量，没超出则返回 <= 0 的数
 int StreamReassembler::exceedEOF(const size_t index, const size_t length) {
     if (_eofIsSet) {
-        return index + length - _eofIndex - 1;
+        return index + length - _eofIndex;
     } else {
         return -1;
     }
