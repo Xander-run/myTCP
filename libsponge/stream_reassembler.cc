@@ -18,7 +18,9 @@ StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity),
 }
 
 StreamReassembler::StreamReassembler(const StreamReassembler& other) : _output(other._capacity), _capacity(other._capacity), _saved(new bool[other._capacity]), _chars(new char[other._capacity]) {
-
+    for (size_t i = 0; i < _capacity; i++) {
+        _saved[i] = false;
+    }
 }
 
 StreamReassembler& StreamReassembler::operator=(const StreamReassembler& other) {
@@ -42,14 +44,17 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 
     // 设置eof部分，这里采取可以多次设置eof的方式
     if (eof) {
-        _eofIndex = index + data.length() - 1;
+        _eofIsSet = true;
+        _eofIndex = index + data.length();
     }
 
     // 更新标志左右区间的Index
     if (_beginIndex > index) {
-        if (index < _maxStreamedIndex) {
+        if (index <= _maxStreamedIndex) {
             _beginIndex = _maxStreamedIndex;
-        } else {
+        }
+    } else {
+        if (_beginIndex == _endIndex) {
             _beginIndex = index;
         }
     }
@@ -84,6 +89,9 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     // 将字符串写入，并更新_maxStreamed
     _output.write(toWrite);
     _maxStreamedIndex += toWrite.length();
+    if (_eofIsSet && _maxStreamedIndex >= _eofIndex) {
+        _output.end_input();
+    }
 }
 
 size_t StreamReassembler::unassembled_bytes() const {
@@ -108,9 +116,9 @@ int StreamReassembler::exceedCapacity(const size_t index, const size_t length) {
 
 // 返回超出EOF的字符数量，没超出则返回 <= 0 的数
 int StreamReassembler::exceedEOF(const size_t index, const size_t length) {
-    if (_eofIndex < 0) {
-        return -1;
+    if (_eofIsSet) {
+        return index + length - _eofIndex - 1;
     } else {
-        return index + length - _eofIndex;
+        return -1;
     }
 }

@@ -27,7 +27,7 @@ int main() {
             test.execute(BytesAvailable("a"));
             test.execute(NotAtEof{});
         }
-
+        // cout << "30" <<endl;
         {
             ReassemblerTestHarness test{65000};
             test.execute(SubmitSegment{"a", 0}.with_eof(true));
@@ -36,7 +36,7 @@ int main() {
             test.execute(BytesAvailable("a"));
             test.execute(AtEof{});
         }
-
+        cout << "39" <<endl;
         {
             ReassemblerTestHarness test{65000};
 
