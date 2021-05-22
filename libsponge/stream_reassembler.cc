@@ -60,8 +60,8 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     }
     _endIndex = _endIndex > index + length ? _endIndex : index + length;
 
-    // 将data的数据读入缓存数组，并更新数组状态, 为避免更新已经输出的Index位置的数据, 此处用_beginIndex作为开始值
-    for (size_t i = _beginIndex; i < index + length; i++) {
+    // 将data的数据读入缓存数组，并更新数组状态, 为避免更新已经输出的Index位置的数据, 此处用_beginIndex和index里面更大的那个作为开头
+    for (size_t i = max(_beginIndex, index); i < index + length; i++) {
         _saved[i % _capacity] = true;
         _chars[i % _capacity] = truncatedData[i - index];
     }

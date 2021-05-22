@@ -57,7 +57,7 @@ int main() {
             test.execute(BytesAvailable("ab"));
             test.execute(NotAtEof{});
         }
-
+        cout << 60 << endl;
         {
             ReassemblerTestHarness test{65000};
 
@@ -82,7 +82,7 @@ int main() {
             test.execute(BytesAvailable("abcd"));
             test.execute(NotAtEof{});
         }
-
+        cout << "85" << endl;
         {
             ReassemblerTestHarness test{65000};
 
