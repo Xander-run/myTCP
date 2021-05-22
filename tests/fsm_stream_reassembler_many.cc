@@ -14,9 +14,9 @@
 
 using namespace std;
 
-static constexpr unsigned NREPS = 3;
-static constexpr unsigned NSEGS = 2;
-static constexpr unsigned MAX_SEG_LEN = 8;
+static constexpr unsigned NREPS = 16;
+static constexpr unsigned NSEGS = 16;
+static constexpr unsigned MAX_SEG_LEN = 2048;
 
 string read(StreamReassembler &reassembler) {
     return reassembler.stream_out().read(reassembler.stream_out().buffer_size());

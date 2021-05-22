@@ -52,6 +52,8 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     if (_beginIndex > index) {
         if (index <= _maxStreamedIndex) {
             _beginIndex = _maxStreamedIndex;
+        } else {
+            _beginIndex = index;
         }
     } else {
         if (_beginIndex == _endIndex) {
@@ -96,8 +98,8 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 
 size_t StreamReassembler::unassembled_bytes() const {
     size_t total = 0;
-    for (size_t i = _maxStreamedIndex; i <_endIndex; i++) {
-        total += _saved[i %_capacity];
+    for (size_t i = _maxStreamedIndex; i < _endIndex; i++) {
+        total += _saved[i % _capacity];
     }
     return total;
 }

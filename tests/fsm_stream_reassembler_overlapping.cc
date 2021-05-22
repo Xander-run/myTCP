@@ -21,7 +21,7 @@ int main() {
             test.execute(BytesAssembled(2));
             test.execute(BytesAvailable("ab"));
         }
-
+        cout << 24 << endl;
         {
             // Overlapping assembled (read) section
             const size_t cap = {1000};
@@ -61,6 +61,7 @@ int main() {
             test.execute(UnassembledBytes{2});
             test.execute(BytesAssembled(0));
         }
+        cout << 64 << endl;
         {
             // Overlapping unassembled section, not resulting in assembly
             const size_t cap = {1000};
@@ -74,7 +75,7 @@ int main() {
             test.execute(UnassembledBytes{3});
             test.execute(BytesAssembled(0));
         }
-
+        cout << 77 << endl;
         {
             // Overlapping multiple unassembled sections
             const size_t cap = {1000};
