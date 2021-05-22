@@ -40,8 +40,12 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     size_t length = data.length();
 
     // todo: 超出部分做截断而不是直接返回
-    if (exceedCapacity(index, length) || exceedEOF(index, length)) {
-        return;
+    if (exceedCapacity(index, length)) {
+
+    }
+
+    if (exceedEOF(index, length)) {
+
     }
 
     if ((_maxUnsavedIndex < int(index + length - 1)) &&_canMaxEndIndexChange) {
