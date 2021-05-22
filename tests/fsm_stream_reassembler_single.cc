@@ -99,7 +99,7 @@ int main() {
             test.execute(BytesAvailable{"abcdefgh"});
             test.execute(AtEof{});
         }
-//        cout << "103" <<endl;
+        cout << "103" <<endl;
         {
             ReassemblerTestHarness test{8};
 
