@@ -30,6 +30,7 @@ WrappingInt32 wrap(uint64_t n, WrappingInt32 isn) {
 //! and the other stream runs from the remote TCPSender to the local TCPReceiver and
 //! has a different ISN.
 uint64_t unwrap(WrappingInt32 n, WrappingInt32 isn, uint64_t checkpoint) {
+    // FIXME: this is a piece of shit
     // 将uint32_t补为64位
     uint64_t extended_n = n.raw_value();
     uint64_t extended_isn = isn.raw_value();
