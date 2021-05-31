@@ -15,6 +15,9 @@ using namespace std;
 StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity), _capacity(capacity), _saved(new bool[capacity]), _chars(new char[capacity]) {
 //    this->_saved = new bool[capacity]();
 //    this->_chars = new char[capacity];
+    for (size_t i = 0; i < _capacity; i++) {
+        _saved[i] = false;
+    }
 }
 
 StreamReassembler::StreamReassembler(const StreamReassembler& other) : _output(other._capacity), _capacity(other._capacity), _saved(new bool[other._capacity]), _chars(new char[other._capacity]) {
