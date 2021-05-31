@@ -13,10 +13,11 @@ using namespace std;
 void TCPReceiver::segment_received(const TCPSegment &seg) {
     switch (_tcpState) {
         case LISTEN:
-            if (seg.header().syn) { // TODO: handle illegal header situation, eg: syn&fin are both set
+            _checkpoint = 0;
+            _isn = seg.header().seqno;
+            if (seg.header().syn && !seg.header().fin) { // TODO: handle illegal header situation, eg: syn&fin are both set
                 _tcpState = SYN_RECV;
-                _checkpoint = 0;
-                _isn = seg.header().seqno;
+                _reassembler.push_substring(seg.payload().copy(), 0, seg.header().fin);
             }
 
             if (seg.header().syn && seg.header().fin) { // TODO: i think this is illegal but the test implies that i should receive and change status to FIN_RECV

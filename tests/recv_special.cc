@@ -122,7 +122,7 @@ int main() {
             test.execute(ExpectAckno{WrappingInt32{isn + 17}});
             test.execute(ExpectEof{});
         }
-
+        cout << 125 << endl;
         /* segment with SYN + data + FIN */
         {
             uint32_t isn = uniform_int_distribution<uint32_t>{0, UINT32_MAX}(rd);
