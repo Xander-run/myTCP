@@ -16,7 +16,7 @@ using namespace std;
 int main() {
     try {
         auto rd = get_random_generator();
-
+        cout << 19 << endl;
         // An in-window, but later segment
         {
             uint32_t isn = uniform_int_distribution<uint32_t>{0, UINT32_MAX}(rd);
@@ -30,7 +30,7 @@ int main() {
             test.execute(ExpectUnassembledBytes{4});
             test.execute(ExpectTotalAssembledBytes{0});
         }
-
+        cout << 33 <<endl;
         // An in-window, but later segment, then the hole is filled
         {
             uint32_t isn = uniform_int_distribution<uint32_t>{0, UINT32_MAX}(rd);
