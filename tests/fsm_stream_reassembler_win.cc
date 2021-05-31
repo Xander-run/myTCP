@@ -14,12 +14,12 @@
 
 using namespace std;
 
-// static constexpr unsigned NREPS = 32;
-//static constexpr unsigned NSEGS = 128;
-//static constexpr unsigned MAX_SEG_LEN = 2048;
-static constexpr unsigned NREPS = 1024;
-static constexpr unsigned NSEGS = 16;
-static constexpr unsigned MAX_SEG_LEN = 16;
+static constexpr unsigned NREPS = 32;
+static constexpr unsigned NSEGS = 128;
+static constexpr unsigned MAX_SEG_LEN = 2048;
+//static constexpr unsigned NREPS = 1024;
+//static constexpr unsigned NSEGS = 16;
+//static constexpr unsigned MAX_SEG_LEN = 16;
 
 string read(StreamReassembler &reassembler) {
     return reassembler.stream_out().read(reassembler.stream_out().buffer_size());
@@ -51,10 +51,10 @@ int main() {
                 buf.push_substring(move(dd), off, off + sz == offset);
                 auto result = read(buf);
                 if (!equal(result.cbegin(), result.cend(), dd.cbegin())) {
-                    cout << "expectd: " << endl;
-                    cout << d << endl;
-                    cout << "but get: " << endl;
-                    cout << result << endl;
+//                    cout << "expectd: " << endl;
+//                    cout << d << endl;
+//                    cout << "but get: " << endl;
+//                    cout << result << endl;
                     // cout << result.length() << endl;
                     throw runtime_error("test 2 - content of RX bytes is incorrect");
                 }

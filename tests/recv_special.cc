@@ -30,7 +30,7 @@ int main() {
             test.execute(ExpectState{TCPReceiverStateSummary::SYN_RECV});
             test.execute(ExpectAckno{WrappingInt32{isn + 1}});
         }
-
+        cout << 33 << endl;
         /* segment with SYN + data */
         {
             uint32_t isn = uniform_int_distribution<uint32_t>{0, UINT32_MAX}(rd);
@@ -46,7 +46,7 @@ int main() {
             test.execute(ExpectUnassembledBytes{0});
             test.execute(ExpectBytes{"Hello, CS144!"});
         }
-
+        cout << 49 << endl;
         /* empty segment */
         {
             uint32_t isn = uniform_int_distribution<uint32_t>{0, UINT32_MAX}(rd);
@@ -81,7 +81,7 @@ int main() {
             test.execute(ExpectAckno{WrappingInt32{isn + 35}});
             test.execute(ExpectInputNotEnded{});
         }
-
+        cout << 84 << endl;
         /* segment with data + FIN */
         {
             uint32_t isn = uniform_int_distribution<uint32_t>{0, UINT32_MAX}(rd);
