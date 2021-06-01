@@ -45,6 +45,7 @@ void TCPSender::fill_window() {
     switch (_tcpSenderState) {
         case CLOSED: {
             TCPSegment synSegment;
+            synSegment.header().seqno = next_seqno();
             synSegment.header().syn = true;
             _segments_out.push(synSegment);
             _outstandingSegments.push(synSegment);
@@ -78,9 +79,11 @@ void TCPSender::fill_window() {
                     // 存在空余的window，此时进行填入，留下一个payload的slot，为了留给eof
                     // todo: 如果有一个eof的标志位，这时候需要减少一个字节的数据吗？现在是没有考虑，直接将fin置0就算了
                     TCPSegment theSegment;
-                    Buffer payload = Buffer(_stream.read(min(TCPConfig::MAX_PAYLOAD_SIZE, _currentWindowSize)));
+                    Buffer payload = Buffer(stream_in().read(min(TCPConfig::MAX_PAYLOAD_SIZE, _currentWindowSize)));
+                    if (!payload.size()) return;
                     theSegment.payload() = payload;
-                    theSegment.header().fin = _stream.eof();
+                    theSegment.header().fin = stream_in().eof();
+                    theSegment.header().seqno = next_seqno();
                     _segments_out.push(theSegment);
                     _outstandingSegments.push(theSegment);
                     _currentWindowSize -= theSegment.length_in_sequence_space();
@@ -112,6 +115,8 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     _currentWindowSize = window_size;
     uint64_t popedSize = 0;
 
+    // FIXME: if the ack is wrong(smaller) , the loop wont end here
+    if (unwrap(ackno, _isn, _next_seqno) < next_seqno_absolute()) return;
     while (!_outstandingSegments.empty()) {
         TCPSegment frontSegment = _outstandingSegments.front();
         // FIXME: 如果说windowsize > 2^32次，这里可能会出bug的，应为checkpoint和_next_seqno并不一致
