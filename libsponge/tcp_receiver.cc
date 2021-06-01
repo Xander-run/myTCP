@@ -11,17 +11,17 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 using namespace std;
 
 void TCPReceiver::segment_received(const TCPSegment &seg) {
-    switch (_tcpState) {
+    switch (_tcpReceiverState) {
         case LISTEN:
             _checkpoint = 0;
             _isn = seg.header().seqno;
             if (seg.header().syn && !seg.header().fin) { // TODO: handle illegal header situation, eg: syn&fin are both set
-                _tcpState = SYN_RECV;
+                _tcpReceiverState = SYN_RECV;
                 _reassembler.push_substring(seg.payload().copy(), 0, seg.header().fin);
             }
 
             if (seg.header().syn && seg.header().fin) { // TODO: i think this is illegal but the test implies that i should receive and change status to FIN_RECV
-                _tcpState = FIN_RECV;
+                _tcpReceiverState = FIN_RECV;
                 _reassembler.push_substring(seg.payload().copy(), 0, seg.header().fin);
             }
             break;
@@ -29,7 +29,7 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
             _reassembler.push_substring(seg.payload().copy(), unwrap(seg.header().seqno, _isn, _checkpoint) - 1, seg.header().fin);
             _checkpoint = _reassembler.stream_out().bytes_written();
             if (_reassembler.stream_out().input_ended()) {
-                _tcpState = FIN_RECV;
+                _tcpReceiverState = FIN_RECV;
             }
             break;
         }
@@ -42,7 +42,7 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
 }
 
 optional<WrappingInt32> TCPReceiver::ackno() const {
-    switch (_tcpState) {
+    switch (_tcpReceiverState) {
         case LISTEN :
             return {};
         case SYN_RECV:

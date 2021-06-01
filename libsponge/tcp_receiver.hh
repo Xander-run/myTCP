@@ -23,7 +23,7 @@ class TCPReceiver {
 
     WrappingInt32 _isn = WrappingInt32(0);
     uint64_t _checkpoint = 0;
-    enum {LISTEN, SYN_RECV, FIN_RECV, ERROR} _tcpState = LISTEN;
+    enum {LISTEN, SYN_RECV, FIN_RECV, ERROR} _tcpReceiverState = LISTEN;
   public:
     //! \brief Construct a TCP receiver
     //!
