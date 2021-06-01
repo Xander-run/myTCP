@@ -8,6 +8,7 @@
 
 #include <functional>
 #include <queue>
+#include <utility>
 
 //! \brief The "sender" part of a TCP implementation.
 
@@ -15,6 +16,26 @@
 //! segments, keeps track of which segments are still in-flight,
 //! maintains the Retransmission Timer, and retransmits in-flight
 //! segments if the retransmission timer expires.
+class Segment {
+  public:
+    uint64_t _absoluteSqn;
+    uint64_t _segmentLength;
+    std::string _data;
+
+    Segment(uint64_t absoluteSqn, uint64_t segmentLength, std::string &data) : _absoluteSqn(absoluteSqn), _segmentLength(segmentLength), _data(data) {};
+
+    bool operator<(const Segment &segment) const {
+        if (_absoluteSqn < segment._absoluteSqn) {
+            return true;
+        } else if (_absoluteSqn == segment._absoluteSqn) {
+            return _segmentLength < segment._segmentLength;
+        } else {
+            return false;
+        }
+    }
+};
+
+
 class TCPSender {
   private:
     //! our initial sequence number, the number for our SYN.
@@ -31,6 +52,12 @@ class TCPSender {
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+
+    //! the outstanding segment that has been cached by the sender
+    std::queue<Segment> _outstandingSegments{};
+
+    //! the current state of the TCP Sender
+    enum{CLOSED, SYN_SENT, SYN_ACKED, FIN_SENT, FIN_ACKER, ERROR} _tcpSenderState{CLOSED};
 
   public:
     //! Initialize a TCPSender
