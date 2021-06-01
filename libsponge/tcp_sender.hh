@@ -16,26 +16,6 @@
 //! segments, keeps track of which segments are still in-flight,
 //! maintains the Retransmission Timer, and retransmits in-flight
 //! segments if the retransmission timer expires.
-class Segment {
-  public:
-    uint64_t _absoluteSqn;
-    uint64_t _segmentLength;
-    std::string _data;
-
-    Segment(uint64_t absoluteSqn, uint64_t segmentLength, std::string &data) : _absoluteSqn(absoluteSqn), _segmentLength(segmentLength), _data(data) {};
-
-    bool operator<(const Segment &segment) const {
-        if (_absoluteSqn < segment._absoluteSqn) {
-            return true;
-        } else if (_absoluteSqn == segment._absoluteSqn) {
-            return _segmentLength < segment._segmentLength;
-        } else {
-            return false;
-        }
-    }
-};
-
-
 class TCPSender {
   private:
     //! our initial sequence number, the number for our SYN.
@@ -47,6 +27,8 @@ class TCPSender {
     //! retransmission timer for the connection
     unsigned int _initial_retransmission_timeout;
 
+    unsigned int _current_retransmission_timeout;
+
     //! outgoing stream of bytes that have not yet been sent
     ByteStream _stream;
 
@@ -54,10 +36,16 @@ class TCPSender {
     uint64_t _next_seqno{0};
 
     //! the outstanding segment that has been cached by the sender
-    std::queue<Segment> _outstandingSegments{};
+    std::queue<TCPSegment> _outstandingSegments{};
 
     //! the current state of the TCP Sender
-    enum{CLOSED, SYN_SENT, SYN_ACKED, FIN_SENT, FIN_ACKER, ERROR} _tcpSenderState{CLOSED};
+    enum{CLOSED, SYN_SENT, SYN_ACKED, FIN_SENT, FIN_ACKED, ERROR} _tcpSenderState{CLOSED};
+
+    unsigned int _accumulated_timeout{0};
+
+    uint64_t _consecutiveRetryNum{0};
+
+    uint64_t _currentWindowSize{1};
 
   public:
     //! Initialize a TCPSender
