@@ -65,17 +65,36 @@ void TCPSender::fill_window() {
         }
         case SYN_ACKED: {
             if (stream_in().eof()) {
-                TCPSegment finSegment
-                segments_out().push();
-                _tcpSenderState = FIN_SENT;
-                return;
-            } else if (_currentWindowSize <= 0) {
-                return;
+                if (next_seqno_absolute() == stream_in().bytes_written() + 2) {
+                    _tcpSenderState = FIN_SENT;
+                } else {
+                    return;
+                }
+            } else {
+                if (_currentWindowSize <= 0) {
+                    send_empty_segment();
+                    return;
+                } else {
+                    // 存在空余的window，此时进行填入，留下一个payload的slot，为了留给eof
+                    // todo: 如果有一个eof的标志位，这时候需要减少一个字节的数据吗？现在是没有考虑，直接将fin置0就算了
+                    TCPSegment theSegment;
+                    Buffer payload = Buffer(_stream.read(min(TCPConfig::MAX_PAYLOAD_SIZE, _currentWindowSize)));
+                    theSegment.payload() = payload;
+                    theSegment.header().fin = _stream.eof();
+                    _segments_out.push(theSegment);
+                    _outstandingSegments.push(theSegment);
+                    _currentWindowSize -= theSegment.length_in_sequence_space();
+                    // do this recursively, check if can push another segment
+                    fill_window();
+                }
             }
         }
             break;
         case FIN_SENT:
-            break;
+            if (!bytes_in_flight()) {
+                _tcpSenderState = FIN_ACKED;
+            }
+            return;
         case FIN_ACKED:
             return;
         case ERROR:
@@ -87,8 +106,28 @@ void TCPSender::fill_window() {
 //! \param window_size The remote receiver's advertised window size
 void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) {
     // 收到ack
-    // 1. 更新_currentWindowSize, 并删除_outstandingSegments
-    // 2. 如果有_currentWindowSize ！= 0， fillwindow
+    // 1. 更新_currentWindowSize(只有从_outstandingSegments中弹出过了之后才进行更新), 并删除_outstandingSegments
+    // 2. 如果有_currentWindowSize ！= 0， fill window
+    // todo: 但是有可能接收方动态调整了窗口大小啊？这种情况会丢弃，之后的ack就会展现出这个窗口的变化，再次设置即可
+    _currentWindowSize = window_size;
+    uint64_t popedSize = 0;
+
+    while (!_outstandingSegments.empty()) {
+        TCPSegment frontSegment = _outstandingSegments.front();
+        // FIXME: 如果说windowsize > 2^32次，这里可能会出bug的，应为checkpoint和_next_seqno并不一致
+        if (unwrap(frontSegment.header().seqno, _isn, _next_seqno) + frontSegment.length_in_sequence_space() <= unwrap(ackno, _isn, _next_seqno)) {
+            _outstandingSegments.pop();
+            popedSize += frontSegment.length_in_sequence_space();
+        }
+    }
+
+    _currentWindowSize = min(_currentWindowSize + popedSize, uint64_t(window_size));
+
+    if (_currentWindowSize > 0) {
+        fill_window();
+    }
+
+    return;
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
@@ -105,7 +144,7 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
         // 积累的超时时间超过当前RTO，重置积累超时时间,将累计重传次数加一，并进行重传
         _accumulated_timeout = 0;
         _consecutiveRetryNum++;
-        consecutive_retransmissions();
+        _segments_out.push(_outstandingSegments.front());
     }
 }
 
