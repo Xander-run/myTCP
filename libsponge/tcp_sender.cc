@@ -60,7 +60,9 @@ void TCPSender::fill_window() {
                 return;
             } else {
                 _tcpSenderState = SYN_ACKED;
-                fill_window();
+                if (_currentWindowSize > 0) {
+                    fill_window();
+                }
                 return;
             }
         }
@@ -73,7 +75,7 @@ void TCPSender::fill_window() {
                 }
             } else {
                 if (_currentWindowSize <= 0) {
-                    send_empty_segment();
+//                    send_empty_segment();
                     return;
                 } else {
                     // 存在空余的window，此时进行填入，留下一个payload的slot，为了留给eof
@@ -89,7 +91,9 @@ void TCPSender::fill_window() {
                     _currentWindowSize -= theSegment.length_in_sequence_space();
                     _next_seqno += theSegment.length_in_sequence_space();
                     // do this recursively, check if can push another segment
-                    fill_window();
+                    if (_currentWindowSize > 0) {
+                        fill_window();
+                    }
                 }
             }
         }
@@ -135,8 +139,12 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 
     _currentWindowSize = min(_currentWindowSize + popedSize, uint64_t(window_size));
 
+    // TODO: 测试的ackreceived之后会紧跟一个fill window，所以说这个fill window是多余的？
     if (_currentWindowSize > 0) {
         fill_window();
+    } else {
+        // TODO: 超时要不要发一个这个？
+        send_empty_segment();
     }
 
     return;

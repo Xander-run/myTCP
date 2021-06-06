@@ -34,7 +34,7 @@ int main() {
             test.execute(ExpectBytesInFlight{8});
             test.execute(ExpectState{TCPSenderStateSummary::SYN_ACKED});
         }
-
+        cout << 37 << endl;
         {
             TCPConfig cfg;
             WrappingInt32 isn(rd());
