@@ -87,6 +87,7 @@ void TCPSender::fill_window() {
                     _segments_out.push(theSegment);
                     _outstandingSegments.push(theSegment);
                     _currentWindowSize -= theSegment.length_in_sequence_space();
+                    _next_seqno += theSegment.length_in_sequence_space();
                     // do this recursively, check if can push another segment
                     fill_window();
                 }
@@ -122,6 +123,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         // FIXME: 如果说windowsize > 2^32次，这里可能会出bug的，应为checkpoint和_next_seqno并不一致
         if (unwrap(frontSegment.header().seqno, _isn, _next_seqno) + frontSegment.length_in_sequence_space() <= unwrap(ackno, _isn, _next_seqno)) {
             _outstandingSegments.pop();
+//            _next_seqno += frontSegment.length_in_sequence_space();
             popedSize += frontSegment.length_in_sequence_space();
             // 接收到更大的TCP之后将retransmission_timeout回复为初始值
             _current_retransmission_timeout = _initial_retransmission_timeout;
