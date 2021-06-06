@@ -18,10 +18,10 @@ class StreamReassembler {
     char *_chars;                //!<  the value in the
     // TODO: refactor
     bool _eofIsSet = false;         // 表示是否已经设置过EOF
-    size_t _beginIndex = 0;         // assembler中存储了的部分开始的Index, 包含
-    size_t _endIndex = 0;           // assembler中存储了的部分结束的结束的Index, 不包含
-    size_t _eofIndex = 0;           // eof对应的Index, 0则表示还没设置, 不可以取到
-    size_t _nextIndexToStream = 0;   // 下一个要输出给stream的index
+    uint64_t _beginIndex = 0;         // assembler中存储了的部分开始的Index, 包含
+    uint64_t _endIndex = 0;           // assembler中存储了的部分结束的结束的Index, 不包含
+    uint64_t _eofIndex = 0;           // eof对应的Index, 0则表示还没设置, 不可以取到
+    uint64_t _nextIndexToStream = 0;   // 下一个要输出给stream的index
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.

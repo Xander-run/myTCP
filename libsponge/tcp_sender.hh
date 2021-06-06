@@ -43,9 +43,9 @@ class TCPSender {
 
     unsigned int _accumulated_timeout{0};
 
-    uint64_t _consecutiveRetryNum{0};
+    size_t _consecutiveRetryNum{0};
 
-    uint64_t _currentWindowSize{1};
+    size_t _currentWindowSize{1};
 
   public:
     //! Initialize a TCPSender

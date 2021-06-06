@@ -38,7 +38,7 @@ StreamReassembler& StreamReassembler::operator=(const StreamReassembler& other) 
 //! \details This function accepts a substring (aka a segment) of bytes,
 //! possibly out-of-order, from the logical stream, and assembles any newly
 //! contiguous substrings and writes them into the output stream in order.
-void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
+void StreamReassembler::push_substring(const string &data, const uint64_t index, const bool eof) {
     size_t length = data.length();
 
     // 根据eof和capacity将data进行截断

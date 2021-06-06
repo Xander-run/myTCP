@@ -24,7 +24,7 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
     , _current_retransmission_timeout{retx_timeout}
     , _stream(capacity) {}
 
-uint64_t TCPSender::bytes_in_flight() const {
+size_t TCPSender::bytes_in_flight() const {
     // 这边可以遍历一遍容器，但我觉得比较傻逼，不过我还不确定这个是不是对的，之后如果有问题我就无脑遍历了XD
     if (_outstandingSegments.empty()) {
         return 0;
@@ -123,6 +123,11 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         if (unwrap(frontSegment.header().seqno, _isn, _next_seqno) + frontSegment.length_in_sequence_space() <= unwrap(ackno, _isn, _next_seqno)) {
             _outstandingSegments.pop();
             popedSize += frontSegment.length_in_sequence_space();
+            // 接收到更大的TCP之后将retransmission_timeout回复为初始值
+            _current_retransmission_timeout = _initial_retransmission_timeout;
+        } else {
+            // 如果不能pop最早的segment，这里就要中断循环，否则就会出现死循环的情况
+            break;
         }
     }
 
@@ -146,9 +151,10 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
     _accumulated_timeout += ms_since_last_tick;
 
     if (_accumulated_timeout >= _current_retransmission_timeout) {
-        // 积累的超时时间超过当前RTO，重置积累超时时间,将累计重传次数加一，并进行重传
+        // 积累的超时时间超过当前RTO，重置积累超时时间,将累计重传次数加一，并进行重传, 并将当前的重传时长加倍
         _accumulated_timeout = 0;
         _consecutiveRetryNum++;
+        _current_retransmission_timeout *= 2;
         _segments_out.push(_outstandingSegments.front());
     }
 }
