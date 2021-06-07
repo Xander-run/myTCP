@@ -67,28 +67,27 @@ void TCPSender::fill_window() {
             }
         }
         case SYN_ACKED: {
-            if (stream_in().eof()) {
-                if (next_seqno_absolute() == stream_in().bytes_written() + 2) {
-                    _tcpSenderState = FIN_SENT;
-                } else {
-                    return;
-                }
+            if (stream_in().eof() && (next_seqno_absolute() == stream_in().bytes_written() + 2)) {
+                _tcpSenderState = FIN_SENT;
+                return;
             } else {
                 if (_currentWindowSize <= 0) {
-//                    send_empty_segment();
                     return;
                 } else {
                     // 存在空余的window，此时进行填入，留下一个payload的slot，为了留给eof
                     // todo: 如果有一个eof的标志位，这时候需要减少一个字节的数据吗？现在是没有考虑，直接将fin置0就算了
                     TCPSegment theSegment;
                     Buffer payload = Buffer(stream_in().read(min(TCPConfig::MAX_PAYLOAD_SIZE, _currentWindowSize)));
-                    if (!payload.size()) return;
+                    if (!payload.size() && !stream_in().eof()) return; // 就算payload不存在，也有可能传入fin
                     theSegment.payload() = payload;
-                    theSegment.header().fin = stream_in().eof();
                     theSegment.header().seqno = next_seqno();
+                    _currentWindowSize -= theSegment.length_in_sequence_space();
+                    if (stream_in().eof() && _currentWindowSize > 0) {
+                        theSegment.header().fin = true;
+                        _tcpSenderState = FIN_SENT;
+                    }
                     _segments_out.push(theSegment);
                     _outstandingSegments.push(theSegment);
-                    _currentWindowSize -= theSegment.length_in_sequence_space();
                     _next_seqno += theSegment.length_in_sequence_space();
                     // do this recursively, check if can push another segment
                     if (_currentWindowSize > 0) {
