@@ -129,8 +129,9 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
             _outstandingSegments.pop();
 //            _next_seqno += frontSegment.length_in_sequence_space();
             popedSize += frontSegment.length_in_sequence_space();
-            // 接收到更大的TCP之后将retransmission_timeout回复为初始值
+            // 接收到更大的TCP之后将retransmission_timeout回复为初始值, 并将 RetryNum 设为 0， 这里如果用一个方法重设这两个变量就体现出 OOP 把握状态量一致性的能力了
             _current_retransmission_timeout = _initial_retransmission_timeout;
+            _consecutiveRetryNum = 0;
         } else {
             // 如果不能pop最早的segment，这里就要中断循环，否则就会出现死循环的情况
             break;
