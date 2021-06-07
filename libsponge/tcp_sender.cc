@@ -120,7 +120,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     uint64_t popedSize = 0;
 
     // FIXME: if the ack is wrong(smaller) , the loop wont end here
-    if (unwrap(ackno, _isn, _next_seqno) < next_seqno_absolute()) return;
+    if (unwrap(_outstandingSegments.front().header().seqno, _isn, _next_seqno) + _outstandingSegments.front().length_in_sequence_space() > unwrap(ackno, _isn, _next_seqno)) return;
     while (!_outstandingSegments.empty()) {
         TCPSegment frontSegment = _outstandingSegments.front();
         // FIXME: 如果说windowsize > 2^32次，这里可能会出bug的，应为checkpoint和_next_seqno并不一致
@@ -129,6 +129,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 //            _next_seqno += frontSegment.length_in_sequence_space();
             popedSize += frontSegment.length_in_sequence_space();
             // 接收到更大的TCP之后将retransmission_timeout回复为初始值, 并将 RetryNum 设为 0， 这里如果用一个方法重设这两个变量就体现出 OOP 把握状态量一致性的能力了
+            _accumulated_timeout = 0;
             _current_retransmission_timeout = _initial_retransmission_timeout;
             _consecutiveRetryNum = 0;
         } else {
@@ -142,9 +143,6 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     // TODO: 测试的ackreceived之后会紧跟一个fill window，所以说这个fill window是多余的？
     if (_currentWindowSize > 0) {
         fill_window();
-    } else {
-        // TODO: 超时要不要发一个这个？
-        send_empty_segment();
     }
 
     return;
