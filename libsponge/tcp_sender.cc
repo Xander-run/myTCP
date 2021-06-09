@@ -117,6 +117,12 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     // 1. 更新_currentWindowSize(只有从_outstandingSegments中弹出过了之后才进行更新), 并删除_outstandingSegments
     // 2. 如果有_currentWindowSize ！= 0， fill window
     // todo: 但是有可能接收方动态调整了窗口大小啊？这种情况会丢弃，之后的ack就会展现出这个窗口的变化，再次设置即可
+    if (_tcpSenderState == SYN_SENT) {
+        // received impossible ack
+        if (unwrap(ackno, _isn, _next_seqno) != _next_seqno) {
+            return;
+        }
+    }
     if (window_size + unwrap(ackno, _isn, _next_seqno) > _next_seqno)
         _currentWindowSize = window_size + unwrap(ackno, _isn, _next_seqno) - _next_seqno;
     if (unwrap(_outstandingSegments.front().header().seqno, _isn, _next_seqno) + _outstandingSegments.front().length_in_sequence_space() > unwrap(ackno, _isn, _next_seqno)) return;
