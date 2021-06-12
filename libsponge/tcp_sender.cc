@@ -185,4 +185,5 @@ void TCPSender::send_empty_segment() {
     TCPSegment emptySegment;
     emptySegment.header().seqno = next_seqno();
     _segments_out.push(emptySegment);
+    // TODO: should i push the segment inside the outgoing queue?
 }
