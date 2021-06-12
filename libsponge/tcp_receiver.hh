@@ -14,6 +14,8 @@
 //! the acknowledgment number and window size to advertise back to the
 //! remote TCPSender.
 
+enum class TCPReceiverState {LISTEN, SYN_RECV, FIN_RECV, ERROR};
+
 class TCPReceiver {
     //! Our data structure for re-assembling bytes.
     StreamReassembler _reassembler;
@@ -23,7 +25,7 @@ class TCPReceiver {
 
     WrappingInt32 _isn = WrappingInt32(0);
     uint64_t _checkpoint = 0;
-    enum {LISTEN, SYN_RECV, FIN_RECV, ERROR} _tcpReceiverState = LISTEN;
+    TCPReceiverState _tcpReceiverState = TCPReceiverState::LISTEN;
   public:
     //! \brief Construct a TCP receiver
     //!
@@ -67,6 +69,14 @@ class TCPReceiver {
     ByteStream &stream_out() { return _reassembler.stream_out(); }
     const ByteStream &stream_out() const { return _reassembler.stream_out(); }
     //!@}
+
+    TCPReceiverState getTCPRecieiverState(){
+        return _tcpReceiverState;
+    }
+
+    void setStateToError() {
+        _tcpReceiverState = TCPReceiverState::ERROR;
+    }
 };
 
 #endif  // SPONGE_LIBSPONGE_TCP_RECEIVER_HH

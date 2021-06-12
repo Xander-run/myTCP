@@ -43,7 +43,7 @@ size_t TCPSender::bytes_in_flight() const {
 // I do this recursively
 void TCPSender::fill_window() {
     switch (_tcpSenderState) {
-        case CLOSED: {
+        case TCPSenderState::CLOSED: {
             TCPSegment synSegment;
             synSegment.header().seqno = next_seqno();
             synSegment.header().syn = true;
@@ -52,23 +52,23 @@ void TCPSender::fill_window() {
             _next_seqno += synSegment.length_in_sequence_space();
             _currentWindowSize -= synSegment.length_in_sequence_space();
             assert(_currentWindowSize == 0);
-            _tcpSenderState = SYN_SENT;
+            _tcpSenderState = TCPSenderState::SYN_SENT;
             return;
         }
-        case SYN_SENT: {
+        case TCPSenderState::SYN_SENT: {
             if (next_seqno_absolute() > 0 && next_seqno_absolute() == bytes_in_flight()) {
                 return;
             } else {
-                _tcpSenderState = SYN_ACKED;
+                _tcpSenderState = TCPSenderState::SYN_ACKED;
                 if (_currentWindowSize > 0) {
                     fill_window();
                 }
                 return;
             }
         }
-        case SYN_ACKED: {
+        case TCPSenderState::SYN_ACKED: {
             if (stream_in().eof() && (next_seqno_absolute() == stream_in().bytes_written() + 2)) {
-                _tcpSenderState = FIN_SENT;
+                _tcpSenderState = TCPSenderState::FIN_SENT;
                 return;
             } else {
                 if (_currentWindowSize <= 0) {
@@ -84,7 +84,7 @@ void TCPSender::fill_window() {
                     _currentWindowSize -= theSegment.length_in_sequence_space();
                     if (stream_in().eof() && _currentWindowSize > 0) {
                         theSegment.header().fin = true;
-                        _tcpSenderState = FIN_SENT;
+                        _tcpSenderState = TCPSenderState::FIN_SENT;
                         _currentWindowSize -= 1;
                     }
                     _segments_out.push(theSegment);
@@ -98,14 +98,14 @@ void TCPSender::fill_window() {
             }
         }
             break;
-        case FIN_SENT:
+        case TCPSenderState::FIN_SENT:
             if (!bytes_in_flight()) {
-                _tcpSenderState = FIN_ACKED;
+                _tcpSenderState = TCPSenderState::FIN_ACKED;
             }
             return;
-        case FIN_ACKED:
+        case TCPSenderState::FIN_ACKED:
             return;
-        case ERROR:
+        case TCPSenderState::ERROR:
             return; // TODO: deal with the ERROR
     }
 }
@@ -117,7 +117,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     // 1. 更新_currentWindowSize(只有从_outstandingSegments中弹出过了之后才进行更新), 并删除_outstandingSegments
     // 2. 如果有_currentWindowSize ！= 0， fill window
     // todo: 但是有可能接收方动态调整了窗口大小啊？这种情况会丢弃，之后的ack就会展现出这个窗口的变化，再次设置即可
-    if (_tcpSenderState == SYN_SENT) {
+    if (_tcpSenderState == TCPSenderState::SYN_SENT) {
         // received impossible ack
         if (unwrap(ackno, _isn, _next_seqno) != _next_seqno) {
             return;

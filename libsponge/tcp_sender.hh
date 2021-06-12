@@ -16,6 +16,9 @@
 //! segments, keeps track of which segments are still in-flight,
 //! maintains the Retransmission Timer, and retransmits in-flight
 //! segments if the retransmission timer expires.
+
+enum class TCPSenderState {CLOSED, SYN_SENT, SYN_ACKED, FIN_SENT, FIN_ACKED, ERROR};
+
 class TCPSender {
   private:
     //! our initial sequence number, the number for our SYN.
@@ -39,7 +42,7 @@ class TCPSender {
     std::queue<TCPSegment> _outstandingSegments{};
 
     //! the current state of the TCP Sender
-    enum{CLOSED, SYN_SENT, SYN_ACKED, FIN_SENT, FIN_ACKED, ERROR} _tcpSenderState{CLOSED};
+    enum TCPSenderState _tcpSenderState{TCPSenderState::CLOSED};
 
     unsigned int _accumulated_timeout{0};
 
@@ -102,6 +105,14 @@ class TCPSender {
     //! \brief relative seqno for the next byte to be sent
     WrappingInt32 next_seqno() const { return wrap(_next_seqno, _isn); }
     //!@}
+
+    TCPSenderState getTCPSenderState() {
+        return _tcpSenderState;
+    }
+
+    void setStateToError() {
+        _tcpSenderState = TCPSenderState::ERROR;
+    }
 };
 
 #endif  // SPONGE_LIBSPONGE_TCP_SENDER_HH

@@ -12,42 +12,42 @@ using namespace std;
 
 void TCPReceiver::segment_received(const TCPSegment &seg) {
     switch (_tcpReceiverState) {
-        case LISTEN:
+        case TCPReceiverState::LISTEN:
             _checkpoint = 0;
             _isn = seg.header().seqno;
             if (seg.header().syn && !seg.header().fin) { // TODO: handle illegal header situation, eg: syn&fin are both set
-                _tcpReceiverState = SYN_RECV;
+                _tcpReceiverState = TCPReceiverState::SYN_RECV;
                 _reassembler.push_substring(seg.payload().copy(), 0, seg.header().fin);
             }
 
             if (seg.header().syn && seg.header().fin) { // TODO: i think this is illegal but the test implies that i should receive and change status to FIN_RECV
-                _tcpReceiverState = FIN_RECV;
+                _tcpReceiverState = TCPReceiverState::FIN_RECV;
                 _reassembler.push_substring(seg.payload().copy(), 0, seg.header().fin);
             }
             break;
-        case SYN_RECV: {
+        case TCPReceiverState::SYN_RECV: {
             _reassembler.push_substring(seg.payload().copy(), unwrap(seg.header().seqno, _isn, _checkpoint) - 1, seg.header().fin);
             _checkpoint = _reassembler.stream_out().bytes_written();
             if (_reassembler.stream_out().input_ended()) {
-                _tcpReceiverState = FIN_RECV;
+                _tcpReceiverState = TCPReceiverState::FIN_RECV;
             }
             break;
         }
-        case FIN_RECV: {
+        case TCPReceiverState::FIN_RECV: {
             break;
         }
-        case ERROR:
+        case TCPReceiverState::ERROR:
             break;
     }
 }
 
 optional<WrappingInt32> TCPReceiver::ackno() const {
     switch (_tcpReceiverState) {
-        case LISTEN :
+        case TCPReceiverState::LISTEN :
             return {};
-        case SYN_RECV:
+        case TCPReceiverState::SYN_RECV:
             return wrap(_reassembler.stream_out().bytes_written() + 1, _isn);
-        case FIN_RECV:
+        case TCPReceiverState::FIN_RECV:
             return wrap(_reassembler.stream_out().bytes_written() + 2, _isn);
         default:
             return {};
