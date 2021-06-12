@@ -70,7 +70,7 @@ class TCPReceiver {
     const ByteStream &stream_out() const { return _reassembler.stream_out(); }
     //!@}
 
-    TCPReceiverState getTCPRecieiverState(){
+    TCPReceiverState getTCPReceiverState(){
         return _tcpReceiverState;
     }
 
