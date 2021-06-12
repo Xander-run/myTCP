@@ -31,7 +31,7 @@ size_t TCPConnection::time_since_last_segment_received() const {
 
 void TCPConnection::segment_received(const TCPSegment &seg) {
     if (_active) return;
-    
+
     // 1. check if RST is set
     if (seg.header().rst) {
         // close the connection, but not dont send the RST
@@ -145,6 +145,6 @@ void TCPConnection::uncleanShutdown(bool sendRST) {
 }
 
 void TCPConnection::cleanShutdown() {
-    // 两种可能: 1. 后手不需要等待 2. 先手发起的需要等待 time out 结束后才算 shutdown
+    // 两种可能: 1. 后手不需要等待 2. 先手发起的需要等待 timeout 结束后才算 shutdown
     _active = false;
 }
