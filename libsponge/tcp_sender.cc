@@ -159,6 +159,12 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
 void TCPSender::tick(const size_t ms_since_last_tick) {
+    // if dont need to retransmit, return
+    if (_tcpSenderState == TCPSenderState::ERROR
+        || _tcpSenderState == TCPSenderState::CLOSED
+        || _tcpSenderState == TCPSenderState::FIN_ACKED) {
+        return;
+    }
     if (_outstandingSegments.empty()) {
         // 不存在outstanding的segment，不需要计时/重传
         _accumulated_timeout = 0;
