@@ -30,6 +30,8 @@ size_t TCPConnection::time_since_last_segment_received() const {
 }
 
 void TCPConnection::segment_received(const TCPSegment &seg) {
+    if (_active) return;
+    
     // 1. check if RST is set
     if (seg.header().rst) {
         // close the connection, but not dont send the RST
@@ -46,6 +48,13 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     if (seg.header().ack) {
         _sender.ack_received(seg.header().ackno, seg.header().win);
     }
+
+    // clean shutdown the connection if no need to _linger_after_streams_finish
+    if (_receiver.getTCPReceiverState() == TCPReceiverState::FIN_RECV
+        && _sender.getTCPSenderState() == TCPSenderState::FIN_ACKED
+        && !_linger_after_streams_finish) {
+        cleanShutdown();
+    }
 }
 
 bool TCPConnection::active() const {
@@ -61,6 +70,8 @@ size_t TCPConnection::write(const string &data) {
 
 //! \param[in] ms_since_last_tick number of milliseconds since the last call to this method
 void TCPConnection::tick(const size_t ms_since_last_tick) {
+    if (!_active) return;
+
     // 1. increase the tick _time_since_last_segment_received and tick the segment out
     _time_since_last_segment_received += ms_since_last_tick;
     _sender.tick(ms_since_last_tick);
@@ -71,6 +82,19 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
     // 3. if retry number exceed TCPConfig::MAX_RETX_ATTEMPTS, close the connection and send RST
     if (_sender.consecutive_retransmissions() > TCPConfig::MAX_RETX_ATTEMPTS) {
         uncleanShutdown(true);
+    }
+
+    // 后手不需要等待
+    if (_receiver.getTCPReceiverState() == TCPReceiverState::FIN_RECV && _sender.getTCPSenderState() != TCPSenderState::FIN_ACKED) {
+            _linger_after_streams_finish = false;
+    }
+
+    // clean shutdown the connection if _linger_after_streams_finish is true and the time exceed
+    if (_sender.getTCPSenderState() == TCPSenderState::FIN_ACKED
+        && _receiver.getTCPReceiverState() == TCPReceiverState::FIN_RECV
+        && _linger_after_streams_finish
+        && _time_since_last_segment_received > _cfg.rt_timeout * 10) {
+        cleanShutdown();
     }
 }
 
@@ -109,6 +133,8 @@ TCPConnection::~TCPConnection() {
     }
 }
 void TCPConnection::uncleanShutdown(bool sendRST) {
+    _sender.setStateToError();
+    _receiver.setStateToError();
     _active = false;
     if (sendRST) {
         _sender.send_empty_segment();
@@ -119,5 +145,6 @@ void TCPConnection::uncleanShutdown(bool sendRST) {
 }
 
 void TCPConnection::cleanShutdown() {
+    // 两种可能: 1. 后手不需要等待 2. 先手发起的需要等待 time out 结束后才算 shutdown
     _active = false;
 }
