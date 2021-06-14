@@ -184,7 +184,8 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
 }
 
 unsigned int TCPSender::consecutive_retransmissions() const {
-    assert(!_outstandingSegments.empty());
+    // no need to assure that consecutive_retransmissions() is called when there is outgoingSegments
+    // assert(!_outstandingSegments.empty());
     return _consecutiveRetryNum;
 }
 

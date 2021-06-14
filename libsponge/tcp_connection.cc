@@ -30,7 +30,7 @@ size_t TCPConnection::time_since_last_segment_received() const {
 }
 
 void TCPConnection::segment_received(const TCPSegment &seg) {
-    if (_active) return;
+    if (!_active) return;
 
     // 1. check if RST is set
     if (seg.header().rst) {
@@ -45,8 +45,10 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     _receiver.segment_received(seg);
 
     // if the ack is set, tell the sender the field it cares
-    if (seg.header().ack) {
-        _sender.ack_received(seg.header().ackno, seg.header().win);
+    _sender.ack_received(seg.header().ackno, seg.header().win);
+    if (checkAndSendSegments() == 0) {
+        _sender.send_empty_segment();
+        checkAndSendSegments();
     }
 
     // clean shutdown the connection if no need to _linger_after_streams_finish
@@ -93,13 +95,17 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
     if (_sender.getTCPSenderState() == TCPSenderState::FIN_ACKED
         && _receiver.getTCPReceiverState() == TCPReceiverState::FIN_RECV
         && _linger_after_streams_finish
-        && _time_since_last_segment_received > _cfg.rt_timeout * 10) {
+        // as the tests suggests, it should be >= here, not >
+        && _time_since_last_segment_received >= _cfg.rt_timeout * 10) {
         cleanShutdown();
     }
 }
 
 void TCPConnection::end_input_stream() {
-    _sender.stream_in().input_ended();
+    _sender.stream_in().end_input();
+    // todo: should fillwindow(), if needed, send segment here
+    _sender.fill_window();
+    checkAndSendSegments();
 }
 
 void TCPConnection::connect() {
@@ -113,6 +119,11 @@ size_t TCPConnection::checkAndSendSegments() {
     while(!_sender.segments_out().empty()) {
         TCPSegment currentSegment = _sender.segments_out().front();
         totalWriteNum += currentSegment.length_in_sequence_space();
+        if (_receiver.ackno().has_value()) {
+            currentSegment.header().ack = true;
+            currentSegment.header().ackno = _receiver.ackno().value();
+            currentSegment.header().win = _receiver.window_size();
+        }
         _segments_out.push(currentSegment);
         _sender.segments_out().pop();
     }
@@ -137,10 +148,9 @@ void TCPConnection::uncleanShutdown(bool sendRST) {
     _receiver.setStateToError();
     _active = false;
     if (sendRST) {
-        _sender.send_empty_segment();
-        _sender.segments_out().back().header().rst = true;
-        assert(!_sender.segments_out().empty());
-        checkAndSendSegments();
+        TCPSegment RSTSegment;
+        RSTSegment.header().rst = true;
+        _segments_out.push(RSTSegment);
     }
 }
 
