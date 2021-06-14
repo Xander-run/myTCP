@@ -50,19 +50,28 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     _receiver.segment_received(seg);
 
     // if the ack is set, tell the sender the field it cares
-    _sender.ack_received(seg.header().ackno, seg.header().win);
-    // FIXME: here TCPSenderState::FINACKED or CLOSED?
-    //        should answer only to FIN in TIME_WAIT state
-    if (checkAndSendSegments() == 0) {
-        if (_receiver.getTCPReceiverState() == TCPReceiverState::FIN_RECV && _linger_after_streams_finish) {
-            // if receive a FIN in TIME_WAIT, should resend the ACK
-            if (seg.header().fin)
-                _sender.send_empty_segment();
-        } else {
-            _sender.send_empty_segment();
-        }
-        checkAndSendSegments();
+    if (seg.header().ack) {
+        _sender.ack_received(seg.header().ackno, seg.header().win);
     }
+
+//    if (checkAndSendSegments() == 0) {
+//        if (_receiver.getTCPReceiverState() == TCPReceiverState::FIN_RECV && _linger_after_streams_finish) {
+//            // if receive a FIN in TIME_WAIT, should resend the ACK
+//            if (seg.header().fin) {
+//                _sender.send_empty_segment();
+//            }
+//        } else {
+//            _sender.send_empty_segment();
+//        }
+////        _sender.send_empty_segment();
+//    }
+//    checkAndSendSegments();
+
+    // TODO: IDK why this shit work
+    if (_sender.stream_in().buffer_empty() && seg.length_in_sequence_space()) {
+        _sender.send_empty_segment();
+    }
+    checkAndSendSegments();
 
     // clean shutdown the connection if no need to _linger_after_streams_finish
     if (_receiver.getTCPReceiverState() == TCPReceiverState::FIN_RECV
@@ -127,6 +136,7 @@ size_t TCPConnection::checkAndSendSegments() {
     size_t totalWriteNum = 0;
     while(!_sender.segments_out().empty()) {
         TCPSegment currentSegment = _sender.segments_out().front();
+        _sender.segments_out().pop();
         totalWriteNum += currentSegment.length_in_sequence_space();
         if (_receiver.ackno().has_value()) {
             currentSegment.header().ack = true;
@@ -134,7 +144,6 @@ size_t TCPConnection::checkAndSendSegments() {
             currentSegment.header().win = _receiver.window_size();
         }
         _segments_out.push(currentSegment);
-        _sender.segments_out().pop();
     }
     return totalWriteNum;
 }
