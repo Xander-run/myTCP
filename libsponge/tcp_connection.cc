@@ -39,6 +39,13 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         return;
     }
 
+    // ACKs in listen
+    if (_receiver.getTCPReceiverState() == TCPReceiverState::LISTEN) {
+        if (!seg.header().syn) {
+            return;
+        }
+    }
+
     // 后手情况下不需要再等待
     if (seg.header().fin && (_sender.getTCPSenderState() != TCPSenderState::FIN_SENT && _sender.getTCPSenderState() != TCPSenderState::FIN_ACKED )) {
         _linger_after_streams_finish = false;
@@ -163,16 +170,26 @@ TCPConnection::~TCPConnection() {
 }
 void TCPConnection::uncleanShutdown(bool sendRST) {
     _sender.setStateToError();
+    _sender.stream_in().set_error();
     _receiver.setStateToError();
+    _receiver.stream_out().set_error();
     _active = false;
+
+    while (!_segments_out.empty()) {
+        _segments_out.pop();
+    }
+
     if (sendRST) {
         TCPSegment RSTSegment;
         RSTSegment.header().rst = true;
+        RSTSegment.header().ack = true;
         _segments_out.push(RSTSegment);
     }
 }
 
 void TCPConnection::cleanShutdown() {
     // 两种可能: 1. 后手不需要等待 2. 先手发起的需要等待 timeout 结束后才算 shutdown
+    _sender.setStateToError();
+    _receiver.setStateToError();
     _active = false;
 }
