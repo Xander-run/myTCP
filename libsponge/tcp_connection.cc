@@ -179,10 +179,14 @@ void TCPConnection::uncleanShutdown(bool sendRST) {
         _segments_out.pop();
     }
 
+    while (!_sender.segments_out().empty()) {
+        _sender.segments_out().pop();
+    }
+
     if (sendRST) {
         TCPSegment RSTSegment;
         RSTSegment.header().rst = true;
-        RSTSegment.header().ack = true;
+//        RSTSegment.header().ack = true;
         _segments_out.push(RSTSegment);
     }
 }
