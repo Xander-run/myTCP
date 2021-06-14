@@ -3,6 +3,7 @@
 #include "tcp_config.hh"
 
 #include <cassert>
+#include <iostream>
 #include <random>
 
 // Dummy implementation of a TCP sender
