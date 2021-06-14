@@ -32,11 +32,16 @@ size_t TCPConnection::time_since_last_segment_received() const {
 void TCPConnection::segment_received(const TCPSegment &seg) {
     if (!_active) return;
 
-    // 1. check if RST is set
+    // check if RST is set
     if (seg.header().rst) {
         // close the connection, but not dont send the RST
         uncleanShutdown(false);
         return;
+    }
+
+    // 后手情况下不需要再等待
+    if (seg.header().fin && (_sender.getTCPSenderState() != TCPSenderState::FIN_SENT && _sender.getTCPSenderState() != TCPSenderState::FIN_ACKED )) {
+        _linger_after_streams_finish = false;
     }
 
     _time_since_last_segment_received = 0;
@@ -46,8 +51,16 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
 
     // if the ack is set, tell the sender the field it cares
     _sender.ack_received(seg.header().ackno, seg.header().win);
+    // FIXME: here TCPSenderState::FINACKED or CLOSED?
+    //        should answer only to FIN in TIME_WAIT state
     if (checkAndSendSegments() == 0) {
-        _sender.send_empty_segment();
+        if (_receiver.getTCPReceiverState() == TCPReceiverState::FIN_RECV && _linger_after_streams_finish) {
+            // if receive a FIN in TIME_WAIT, should resend the ACK
+            if (seg.header().fin)
+                _sender.send_empty_segment();
+        } else {
+            _sender.send_empty_segment();
+        }
         checkAndSendSegments();
     }
 
@@ -86,10 +99,6 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
         uncleanShutdown(true);
     }
 
-    // 后手不需要等待
-    if (_receiver.getTCPReceiverState() == TCPReceiverState::FIN_RECV && _sender.getTCPSenderState() != TCPSenderState::FIN_ACKED) {
-            _linger_after_streams_finish = false;
-    }
 
     // clean shutdown the connection if _linger_after_streams_finish is true and the time exceed
     if (_sender.getTCPSenderState() == TCPSenderState::FIN_ACKED
